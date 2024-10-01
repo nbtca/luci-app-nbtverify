@@ -2,4 +2,5 @@
 校园网认证 for OpenWrt
 
 # 图骗
-![image](https://github.com/user-attachments/assets/f4322c6f-35b6-4de5-9cbe-735303324166)
+![image](https://github.com/user-attachments/assets/803a04e3-25de-4517-84e5-24d5fe66df05)
+
