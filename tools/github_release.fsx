@@ -6,7 +6,7 @@ let client = new Octokit.GitHubClient(new Octokit.ProductHeaderValue("nbtca"))
 let download (url: string) (saveTo: string) onProgress =
     let downloadOpt =
         new DownloadConfiguration(
-            ChunkCount = 8, // file parts to download, the default value is 1
+            ChunkCount = 1, // file parts to download, the default value is 1
             ParallelDownload = true // download parts of the file as parallel or not. The default value is false
         )
     let service = new DownloadService(downloadOpt)
