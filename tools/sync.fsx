@@ -86,8 +86,9 @@ let doSync withDownload =
                 printfn "Updating %s" remotePath
                 upload file remotePath
             else if withDownload then
-                printfn "Downloading %s" remotePath
-                download remotePath file
+                if remotePath <> "/etc/config/nbtverify" then
+                    printfn "Downloading %s" remotePath
+                    download remotePath file
 
 let args = System.Environment.GetCommandLineArgs()
 
@@ -106,14 +107,13 @@ if args.Length > 2 then
 
             System.Threading.Tasks.Task
                 .Delay(200)
-                .ContinueWith(fun _ ->
-                    task {
-                        try
-                            doSync false
-                        with ex ->
-                            printfn "Error: %s" ex.Message
-                            update ()
-                    })
+                .ContinueWith(fun _ -> task {
+                    try
+                        doSync false
+                    with ex ->
+                        printfn "Error: %s" ex.Message
+                        update ()
+                })
             |> ignore
 
 

@@ -22,7 +22,10 @@ printfn "Args: %A" argv
 let result = CommandLine.Parser.Default.ParseArguments<options>(argv)
 let run (o: options) =
     printfn "Parser success"
-    version <- o.version.TrimStart('v')
+    if o.version |> System.String.IsNullOrWhiteSpace then
+        printfn "Version not provided"
+    else
+        version <- o.version.TrimStart('v')
     printfn "version = %s" version
 let fail (e: IEnumerable<Error>) = failwithf "Parser failed with %A" e
 match result with

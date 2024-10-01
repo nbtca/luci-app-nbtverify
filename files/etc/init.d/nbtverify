@@ -25,15 +25,18 @@ start_instance() {
     local cfg="$1" param
     config_get_bool enabled $cfg enabled 0
     [[ x$enabled = x1 ]] || return 1
-    xappend "-url /var/nbtverify/url.txt"
     append_parm "$cfg" 'username' '-u' '0'
     append_parm "$cfg" 'password' '-p' '0'
     append_parm "$cfg" 'mobile' '-mobile' '0'
     mkdir -p /var/nbtverify
+    xappend "-url /var/nbtverify/url.txt"
     touch /var/nbtverify/url.txt
+    xappend "-s /var/log/nbtverify.log"
+    touch /var/log/nbtverify.log
     procd_open_instance
     echo ${PROG} ${param}
     ${PROG} ${param}
+    xappend "service"
     procd_set_param command ${PROG} ${param}
     procd_set_param respawn
     procd_set_param pidfile $PIDFILE

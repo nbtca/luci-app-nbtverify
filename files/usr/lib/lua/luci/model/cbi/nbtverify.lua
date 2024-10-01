@@ -1,6 +1,7 @@
 require("luci.sys")
 
 m = Map("nbtverify", translate("nbtverify Client"), translate("Configure nbtverify client."))
+m:section(SimpleSection).template = "nbtverify_status"
 
 s = m:section(TypedSection, "server", "")
 s.addremove = false
