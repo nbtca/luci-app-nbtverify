@@ -18,8 +18,13 @@ function copyToClipboard(text) {
 			var tb = document.getElementById('nbtverify_status');
 			if (res && tb)
 			{
-				const  data= JSON.parse(res.data)
-				console.log(JSON.stringify(data, null, 2));
+				let data={}
+				try {
+					data = JSON.parse(res.data)
+					console.log(JSON.stringify(data, null, 2));
+				} catch (error) {
+					console.log(JSON.stringify(res, null, 2));
+				}
 				if (res.running)
 				{
 					// var URL = "<%=protocol%>" + window.location.hostname +":<%=luci.model.uci.cursor():get_first("nbtverify", "basic", "port") %>";
