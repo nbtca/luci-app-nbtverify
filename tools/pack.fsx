@@ -41,12 +41,12 @@ let createTarGz output root files (replacements: Collections.Generic.IDictionary
               let relativePath = fixPath file
               let find, data = replacements.TryGetValue(relativePath)
               if find then
-                  printfn "Replacing %s" relativePath
+                //   printfn "Replacing %s" relativePath
                   use newStream = new MemoryStream(data)
                   writer.Write(relativePath, newStream, DateTime.Now)
                   data.LongLength
               else
-                  printfn "Packing %s" relativePath
+                //   printfn "Packing %s" relativePath
                   let fileInfo = FileInfo(file)
                   use fileStream = fileInfo.OpenRead()
                   writer.Write(relativePath, fileStream, fileInfo.LastWriteTime)
@@ -121,8 +121,27 @@ let openwrtArchMap =
     dict
         [ "386", [ "i386_pentium4" ]
           "amd64", [ "x86_64" ]
-          "arm", [ "arm_cortex-a9" ]
-          "arm64", [ "aarch64_generic" ]
+          "arm",
+          [ "arm_cortex-a9"
+            "arm_arm1176jzf-s_vfp"
+            "arm_arm926ej-s"
+            "arm_cortex-a15_neon-vfpv4"
+            "arm_cortex-a5_vfpv4"
+            "arm_cortex-a7"
+            "arm_cortex-a7_neon-vfpv4"
+            "arm_cortex-a7_vfpv4"
+            "arm_cortex-a8_vfpv3"
+            "arm_cortex-a9"
+            "arm_cortex-a9_neon"
+            "arm_cortex-a9_vfpv3-d16"
+            "arm_fa526"
+            "arm_mpcore"
+            "arm_xscale" ]
+          "arm64",
+          [ "aarch64_generic"
+            "aarch64_cortex-a53"
+            "aarch64_cortex-a72"
+            "aarch64_cortex-a76" ]
           "mips64", [ "mips64_mips64" ]
           "mips64le", [ "mips64el_mips64" ]
           "mipsle", [ "mipsel_mips32"; "mipsel_24kc"; "mipsel_74kc" ]
@@ -140,7 +159,7 @@ let unpack tarFile =
             let path = entry.Key
             let filename = path |> Path.GetFileName
             if filename = "nbtverify" then
-                printfn "Extracting %s" filename
+                // printfn "Extracting %s" filename
                 reader.WriteEntryTo(memoryStream)
     memoryStream.ToArray()
 let dist = Path.Combine(git, "dist")
