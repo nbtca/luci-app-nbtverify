@@ -20,11 +20,11 @@ let saveConnectionInfo (info: ConnectionInfo) =
     let json =
         JsonSerializer.Serialize(info, JsonSerializerOptions(WriteIndented = true))
 
-    System.IO.File.WriteAllText(configFile, json)
+    File.WriteAllText(configFile, json)
 
 
 let connectionInfo =
-    match System.IO.File.Exists configFile with
+    match File.Exists configFile with
     | true -> readConnectionInfo ()
     | false ->
         { Host = "localhost"
