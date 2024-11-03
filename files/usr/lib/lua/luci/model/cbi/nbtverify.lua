@@ -11,6 +11,7 @@ enabled = s:option(Flag, "enabled", translate("Enable"))
 username = s:option(Value, "username", translate("Username"))
 pass = s:option(Value, "password", translate("Password"))
 mobile = s:option(Flag, "mobile", translate("Mobile"))
+ping = s:option(Value, "ping", translate("Ping Url"))
 pass.password = true
 m.apply_on_parse = true
 m.on_after_apply = function(self, map)

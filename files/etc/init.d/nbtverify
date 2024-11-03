@@ -28,6 +28,7 @@ start_instance() {
     append_parm "$cfg" 'username' '-u' '0'
     append_parm "$cfg" 'password' '-p' '0'
     append_parm "$cfg" 'mobile' '-mobile' '0'
+    append_parm "$cfg" 'ping' '-ping' 'http://10.80.92.85/'
     mkdir -p /var/nbtverify
     xappend "-url /var/nbtverify/url.txt"
     touch /var/nbtverify/url.txt

@@ -4,4 +4,4 @@ config server
 	option password ''
 	option enabled '1'
 	option mobile '1'
-
+	option ping ''
