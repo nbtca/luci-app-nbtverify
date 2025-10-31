@@ -38,8 +38,8 @@ jobs:
             sdk_name: openwrt-sdk-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64
           # ARM64/Aarch64
           - arch: aarch64_cortex-a53
-            sdk_url_path: snapshots/targets/ipq806x/generic
-            sdk_name: openwrt-sdk-ipq806x-generic_gcc-13.3.0_musl.Linux-x86_64
+            sdk_url_path: snapshots/targets/bcm27xx/bcm2710
+            sdk_name: openwrt-sdk-bcm27xx-bcm2710_gcc-13.3.0_musl.Linux-x86_64
           # MIPS
           - arch: mipsel_24kc
             sdk_url_path: snapshots/targets/ramips/mt7621

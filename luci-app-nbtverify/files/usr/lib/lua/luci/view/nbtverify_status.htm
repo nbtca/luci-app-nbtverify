@@ -7,7 +7,6 @@ protocol="http://"
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
         alert('复制成功: ' + text);
-		window.location.reload();
     }).catch(err => {
         console.error('复制失败: ', err);
     });
@@ -27,22 +26,18 @@ function copyToClipboard(text) {
 				}
 				if (res.running)
 				{
-					// var URL = "<%=protocol%>" + window.location.hostname +":<%=luci.model.uci.cursor():get_first("nbtverify", "basic", "port") %>";
-					// tb.innerHTML = '<em><b style=\"color:green\"><%:The DDNS-GO service is running.%></b></em>';
-					// tb.innerHTML +='<em> <br/><br/>' + ' <b > <%:Click the new page to open ddns-go%> </em>';
-						tb.innerHTML = '<em><b style=\"color:green\"><%:The nbtverify service is running.%></b></em>';
-						// tb.innerHTML += "<input class=\"cbi-button cbi-button-reload \" type=\"button\" value=\"跳转\" onclick=\"window.open('"+ URL+ "/')\"/>";
-						try {
-							const {result,detail}=data ?? {}
-							const {baseUrl,success}=result ?? {}
-							const {welcome,account,userIp,userMac,userName,deviceIp}=detail ?? {}
-							const html = `
-							 <span style="color: ${success?'green':'red'}; font-weight: bold;"><%:Success%>: ${success}</span>
-							 <br/>
-							 <span style="color: blue;font-size: large;">${welcome}</span>
-							 <br/>
-							 <span style="color: darkorange;font-size: large;">${account}</span>
-							 <br/>
+					tb.innerHTML = '<em><b style=\"color:green\"><%:The nbtverify service is running.%></b></em>';
+					try {
+						const {result,detail}=data ?? {}
+						const {baseUrl,success}=result ?? {}
+						const {welcome,account,userIp,userMac,userName,deviceIp}=detail ?? {}
+						const html = `
+						 <span style="color: ${success?'green':'red'}; font-weight: bold;"><%:Success%>: ${success}</span>
+						 <br/>
+						 <span style="color: blue;font-size: large;">${welcome}</span>
+						 <br/>
+						 <span style="color: darkorange;font-size: large;">${account}</span>
+						 <br/>
 <div style="font-family: Arial, sans-serif; display: grid; grid-template-columns: 100px 1fr; gap: 10px; line-height: 1.5; align-items: center;">
     <span style="display: flex; align-items: center;"><%:校园网IP%>:</span>
     <span style="font-weight: bold;">${userIp}
@@ -70,12 +65,12 @@ function copyToClipboard(text) {
     </span>
 </div>
 
-						`
-							tb.innerHTML += html
+					`
+						tb.innerHTML += html
 
-						} catch (error) {
-							tb.innerHTML += '<br /><em style=\"color:red\"><%:backend error.%></em><br/>';
-						}
+					} catch (error) {
+						tb.innerHTML += '<br /><em style=\"color:red\"><%:backend error.%></em><br/>';
+					}
 				}
 				else
 				{
