@@ -52,5 +52,6 @@ service_triggers() {
 }
 
 stop_service() {
-    killall -q ${PROG}
+    # Procd will handle process termination automatically
+    :
 }
