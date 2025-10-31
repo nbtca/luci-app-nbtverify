@@ -1,4 +1,8 @@
-name: publish
+# This workflow is deprecated and replaced by build-openwrt.yml
+# It's kept for reference only
+# New workflow uses OpenWrt SDK for building packages
+
+name: publish (deprecated)
 
 on:
   push:

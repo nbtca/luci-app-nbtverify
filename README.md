@@ -34,11 +34,14 @@ opkg install luci-app-nbtverify_*.ipk
 
 #### Using OpenWrt SDK
 
+See [FEED.md](FEED.md) for detailed instructions on using this package with OpenWrt SDK or as a custom feed.
+
+Quick start:
 1. Download and extract OpenWrt SDK for your architecture
-2. Clone this repository into the SDK's package directory:
+2. Clone this repository:
 ```bash
 cd openwrt-sdk
-git clone https://github.com/nbtca/luci-app-nbtverify.git package/luci-app-nbtverify
+git clone https://github.com/nbtca/luci-app-nbtverify.git
 ```
 
 3. Update feeds and install dependencies:
@@ -48,16 +51,26 @@ git clone https://github.com/nbtca/luci-app-nbtverify.git package/luci-app-nbtve
 ./scripts/feeds install golang
 ```
 
-4. Build the packages:
+4. Copy packages to SDK:
 ```bash
-make package/luci-app-nbtverify/nbtverify/compile V=s
-make package/luci-app-nbtverify/luci-app-nbtverify/compile V=s
+cp -r luci-app-nbtverify/nbtverify package/
+cp -r luci-app-nbtverify/luci-app-nbtverify package/
 ```
 
-5. Find the packages in `bin/packages/*/luci-app-nbtverify/`
+
+4. Build the packages:
+```bash
+make package/nbtverify/compile V=s
+make package/luci-app-nbtverify/compile V=s
+```
+
+5. Find the packages in `bin/packages/*/`
 
 #### Using OpenWrt Buildroot
 
+See [FEED.md](FEED.md) for detailed instructions.
+
+Quick start:
 1. Clone OpenWrt buildroot:
 ```bash
 git clone https://git.openwrt.org/openwrt/openwrt.git
@@ -75,6 +88,7 @@ src-git nbtverify https://github.com/nbtca/luci-app-nbtverify.git
 ./scripts/feeds install -a
 ./scripts/feeds install nbtverify luci-app-nbtverify
 ```
+
 
 4. Configure and build:
 ```bash
