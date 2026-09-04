@@ -1,0 +1,104 @@
+--- a/config/loader.go
++++ b/config/loader.go
+@@ -12,10 +12,9 @@ func LoadConfig(path string, cfg *Config) error {
+ 	if err != nil {
+ 		return err
+ 	}
++	if json.Valid(bytes) {
++		return json.Unmarshal(bytes, cfg)
++	}
+ 	bytes = utils.RemoveComments(bytes)
+-	err = json.Unmarshal(bytes, cfg)
+-	if err != nil {
+-		return err
+-	}
+-	return nil
++	return json.Unmarshal(bytes, cfg)
+ }
+--- a/main.go
++++ b/main.go
+@@ -150,6 +150,7 @@ func main() {
+ 			fmt.Println(err)
+ 			return
+ 		}
++		mobile = cfg.AsMobile
+ 	}
+ 	if action == "service" {
+ 		service()
+--- a/nbtverify/utils/request.go
++++ b/nbtverify/utils/request.go
+@@ -6,8 +6,11 @@ import (
+ 	"net/http"
+ 	urllib "net/url"
+ 	"strings"
++	"time"
+ )
+ 
++var httpClient = &http.Client{Timeout: 30 * time.Second}
++
+ func setHeader(req *http.Request, mobile bool, referer string, cookies ...*http.Cookie) {
+ 	for _, cookie := range cookies {
+ 		req.AddCookie(cookie)
+@@ -43,12 +46,11 @@ func RequestPostForm(url string, body map[string]string, mobile bool) ([]byte, []*http.Cookie, error) {
+ 	// 添加自定义的header
+ 	setHeader(req, mobile, "")
+ 	// 执行请求
+-	client := &http.Client{}
+-	resp, err := client.Do(req)
+-	cookies := resp.Cookies()
++	resp, err := httpClient.Do(req)
+ 	if err != nil {
+ 		return nil, nil, err
+ 	}
++	cookies := resp.Cookies()
+ 	defer resp.Body.Close()
+ 	// 处理响应
+ 	res, err := io.ReadAll(resp.Body)
+@@ -73,8 +75,7 @@ func RequestPost(url string, body interface{}, mobile bool) ([]byte, error) {
+ 	// 添加自定义的header
+ 	setHeader(req, mobile, "")
+ 	// 执行请求
+-	client := &http.Client{}
+-	resp, err := client.Do(req)
++	resp, err := httpClient.Do(req)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+@@ -99,8 +100,7 @@ func RequestGetReferer(url string, mobile bool, referer string, cookies ...*http.Cookie) ([]byte, error) {
+ 	// 添加自定义的header
+ 	setHeader(req, mobile, referer, cookies...)
+ 	// 创建一个HTTP客户端并执行请求
+-	client := &http.Client{}
+-	resp, err := client.Do(req)
++	resp, err := httpClient.Do(req)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+--- a/nbtverify/utils/utils.go
++++ b/nbtverify/utils/utils.go
+@@ -46,6 +46,9 @@ func FormToMap(doc *goquery.Document, selector string) map[string]string {
+ }
+ func ConvertMac(hexString string) string {
+ 	hexString = strings.ToUpper(hexString)
++	if len(hexString)%2 != 0 {
++		return hexString
++	}
+ 	var parts []string
+ 	for i := 0; i < len(hexString); i += 2 {
+ 		parts = append(parts, hexString[i:i+2])
+@@ -103,11 +106,14 @@ func FileNotExists(path string) error {
+ }
+ 
+ func SaveJson(path string, data interface{}) error {
+-	file, err := os.Create(path)
++	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+ 	if err != nil {
+ 		return err
+ 	}
+ 	defer file.Close()
++	if err := file.Chmod(0600); err != nil {
++		return err
++	}
+ 	encoder := json.NewEncoder(file)
+ 	encoder.SetIndent("", "    ")
+ 	return encoder.Encode(data)

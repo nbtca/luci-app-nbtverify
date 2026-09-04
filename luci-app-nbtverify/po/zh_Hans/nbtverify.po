@@ -1,8 +1,17 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8"
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "NBT Verify"
+msgstr "校园网认证"
 
 msgid "nbtverify"
 msgstr "校园网认证"
+
+msgid "nbtverify Client"
+msgstr "校园网认证客户端"
+
+msgid "Configure nbtverify client."
+msgstr "配置校园网认证客户端。"
 
 msgid "nbtverify status"
 msgstr "nbtverify 状态"
@@ -16,8 +25,17 @@ msgstr "nbtverify 服务未运行。"
 msgid "Collecting data..."
 msgstr "正在收集数据..."
 
+msgid "Waiting for authentication status..."
+msgstr "正在等待认证状态..."
+
 msgid "Success"
 msgstr "成功"
+
+msgid "Yes"
+msgstr "是"
+
+msgid "No"
+msgstr "否"
 
 msgid "Campus IP"
 msgstr "校园网IP"
@@ -37,5 +55,20 @@ msgstr "登录地址"
 msgid "Copy"
 msgstr "复制"
 
-msgid "backend error."
-msgstr "后端错误。"
+msgid "Copied to clipboard."
+msgstr "已复制到剪贴板。"
+
+msgid "Copy failed."
+msgstr "复制失败。"
+
+msgid "Enable"
+msgstr "启用"
+
+msgid "Password"
+msgstr "密码"
+
+msgid "Mobile mode"
+msgstr "移动端模式"
+
+msgid "Ping URL"
+msgstr "连通性检测地址"

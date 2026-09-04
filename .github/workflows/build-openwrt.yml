@@ -1,145 +1,141 @@
-name: Build OpenWrt Packages
+name: Build ImmortalWrt packages
 
 on:
   push:
     branches:
       - main
-      - master
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
-      - master
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
-  contents: write
+  contents: read
+
+env:
+  SDK_BASE_URL: https://downloads.immortalwrt.org/releases/25.12.1/targets/x86/64
+  SDK_ARCHIVE: immortalwrt-sdk-25.12.1-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst
+  SDK_SHA256: 02ad8cfc775001ccae8e9282d19696de54e3ab3963f005737ad61f8698263edd
 
 jobs:
   build:
-    name: Build ${{ matrix.arch }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # x86_64
-          - arch: x86_64
-            sdk_url_path: snapshots/targets/x86/64
-            sdk_name: openwrt-sdk-x86-64_gcc-13.3.0_musl.Linux-x86_64
-          # ARM Cortex-A9
-          - arch: arm_cortex-a9
-            sdk_url_path: snapshots/targets/bcm53xx/generic
-            sdk_name: openwrt-sdk-bcm53xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64
-          # ARM Cortex-A7
-          - arch: arm_cortex-a7_neon-vfpv4
-            sdk_url_path: snapshots/targets/ipq40xx/generic
-            sdk_name: openwrt-sdk-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64
-          # ARM64/Aarch64
-          - arch: aarch64_cortex-a53
-            sdk_url_path: snapshots/targets/bcm27xx/bcm2710
-            sdk_name: openwrt-sdk-bcm27xx-bcm2710_gcc-13.3.0_musl.Linux-x86_64
-          # MIPS
-          - arch: mipsel_24kc
-            sdk_url_path: snapshots/targets/ramips/mt7621
-            sdk_name: openwrt-sdk-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64
+    name: ImmortalWrt 25.12.1 / x86_64
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v5
 
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          df -h
-
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang flex bison g++ gawk \
-            gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev \
-            python3-distutils rsync unzip zlib1g-dev file wget qemu-utils
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential clang curl flex bison g++ gawk gcc-multilib \
+            g++-multilib gettext git libncurses-dev libssl-dev \
+            python3 python3-setuptools rsync swig unzip zlib1g-dev \
+            file wget zstd
 
-      - name: Download and extract SDK
+      - name: Download and verify SDK
         run: |
-          wget -q https://downloads.openwrt.org/${{ matrix.sdk_url_path }}/${{ matrix.sdk_name }}.tar.xz
-          tar xf ${{ matrix.sdk_name }}.tar.xz
-          mv ${{ matrix.sdk_name }} openwrt-sdk
+          curl --fail --location --retry 3 --retry-delay 2 \
+            --output "$SDK_ARCHIVE" "$SDK_BASE_URL/$SDK_ARCHIVE"
+          echo "$SDK_SHA256 *$SDK_ARCHIVE" | sha256sum --check --strict
+          mkdir openwrt-sdk
+          tar --zstd --extract --file "$SDK_ARCHIVE" \
+            --directory openwrt-sdk --strip-components=1
 
-      - name: Update and install feeds
+      - name: Cache package downloads
+        uses: actions/cache@v4
+        with:
+          path: openwrt-sdk/dl
+          key: immortalwrt-25.12.1-x86_64-${{ hashFiles('nbtverify/Makefile', 'nbtverify/patches/**') }}
+
+      - name: Prepare feeds and packages
         run: |
           cd openwrt-sdk
-          # Update feeds
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-          
-          # Install golang
-          ./scripts/feeds install golang
-
-      - name: Copy packages to SDK
-        run: |
-          cd openwrt-sdk
-          mkdir -p package/nbtverify
-          cp -r ../nbtverify/* package/nbtverify/
-          mkdir -p package/luci-app-nbtverify
-          cp -r ../luci-app-nbtverify/* package/luci-app-nbtverify/
+          cp -a "$GITHUB_WORKSPACE/nbtverify" package/nbtverify
+          cp -a "$GITHUB_WORKSPACE/luci-app-nbtverify" package/luci-app-nbtverify
 
       - name: Configure SDK
         run: |
           cd openwrt-sdk
-          # Create minimal config
-          cat > .config <<EOF
+          cat > .config <<'EOF'
           CONFIG_PACKAGE_nbtverify=m
           CONFIG_PACKAGE_luci-app-nbtverify=m
+          CONFIG_PACKAGE_luci-i18n-nbtverify-zh-cn=m
           EOF
           make defconfig
+          for package in nbtverify luci-app-nbtverify luci-i18n-nbtverify-zh-cn; do
+            grep -qx "CONFIG_PACKAGE_${package}=m" .config || {
+              echo "Package was not selected: $package" >&2
+              exit 1
+            }
+          done
 
       - name: Build packages
         run: |
           cd openwrt-sdk
-          make package/nbtverify/compile V=s
-          make package/luci-app-nbtverify/compile V=s
+          make package/nbtverify/download V=s
+          make package/nbtverify/compile -j"$(nproc)" V=s
+          make package/feeds/luci/luci-base/host/compile -j"$(nproc)" V=s
+          make package/luci-app-nbtverify/compile -j"$(nproc)" V=s
 
-      - name: Collect packages
+      - name: Collect and verify packages
         run: |
-          cd openwrt-sdk
-          mkdir -p ../output
-          find bin/packages -name '*.ipk' -exec cp {} ../output/ \;
-          ls -lh ../output/
+          mkdir output
+          find openwrt-sdk/bin/packages -type f \
+            \( -name 'nbtverify-*.apk' \
+               -o -name 'luci-app-nbtverify-*.apk' \
+               -o -name 'luci-i18n-nbtverify-zh-cn-*.apk' \) \
+            -exec cp --target-directory=output {} +
 
-      - name: Upload artifacts
+          for package in nbtverify luci-app-nbtverify luci-i18n-nbtverify-zh-cn; do
+            find output -maxdepth 1 -type f -name "${package}-*.apk" -print -quit | grep -q . || {
+              echo "Missing package: $package" >&2
+              exit 1
+            }
+          done
+
+          (cd output && sha256sum -- *.apk > SHA256SUMS)
+          ls -lh output
+
+      - name: Upload packages
         uses: actions/upload-artifact@v4
         with:
-          name: packages-${{ matrix.arch }}
-          path: output/*.ipk
+          name: immortalwrt-25.12.1-x86_64-packages
+          path: |
+            output/*.apk
+            output/SHA256SUMS
+          if-no-files-found: error
 
   release:
-    name: Create Release
+    name: Create release
     needs: build
-    runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
 
-      - name: Download all artifacts
+    steps:
+      - name: Download packages
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          name: immortalwrt-25.12.1-x86_64-packages
+          path: release
 
-      - name: Prepare release files
-        run: |
-          mkdir -p release
-          find artifacts -name '*.ipk' -exec cp {} release/ \;
-          ls -lh release/
-
-      - name: Create Release
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*.ipk
+          files: |
+            release/*.apk
+            release/SHA256SUMS
           generate_release_notes: true
-          draft: false
-          prerelease: false
+          fail_on_unmatched_files: true

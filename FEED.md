@@ -1,150 +1,108 @@
-# OpenWrt Feed Configuration
+# Feed integration
 
-This repository can be added as a custom feed to your OpenWrt buildroot or used directly with OpenWrt SDK.
+本仓库是一个标准的 OpenWrt feed，包含 `nbtverify` 和 `luci-app-nbtverify` 两个源码包；简体中文翻译包由 `luci.mk` 自动生成。
 
-## Method 1: Add as Custom Feed
+## 在完整源码树中使用
 
-### Step 1: Edit feeds.conf.default
+把以下内容加入 `feeds.conf`：
 
-Add the following line to your `feeds.conf.default` or `feeds.conf`:
-
-```
+```text
 src-git nbtverify https://github.com/nbtca/luci-app-nbtverify.git
 ```
 
-Or use a specific branch:
+安装 feed：
 
-```
-src-git nbtverify https://github.com/nbtca/luci-app-nbtverify.git;main
-```
-
-### Step 2: Update and Install Feeds
-
-```bash
+```sh
 ./scripts/feeds update nbtverify
 ./scripts/feeds install -a -p nbtverify
 ```
 
-### Step 3: Select Packages in menuconfig
+通过 `make menuconfig` 选择：
 
-```bash
-make menuconfig
+```text
+Network  -> nbtverify
+LuCI     -> Applications -> luci-app-nbtverify
+Languages -> luci-i18n-nbtverify-zh-cn
 ```
 
-Navigate to:
-- `Network` → `nbtverify` - Enable the main package
-- `LuCI` → `Applications` → `luci-app-nbtverify` - Enable the LuCI interface
+也可以直接写入配置：
 
-### Step 4: Build
-
-```bash
-make package/nbtverify/compile V=s
-make package/luci-app-nbtverify/compile V=s
+```sh
+cat >> .config <<'EOF'
+CONFIG_PACKAGE_nbtverify=m
+CONFIG_PACKAGE_luci-app-nbtverify=m
+CONFIG_PACKAGE_luci-i18n-nbtverify-zh-cn=m
+EOF
+make defconfig
 ```
 
-Or build the entire firmware:
+构建：
 
-```bash
-make -j$(nproc)
+```sh
+make package/nbtverify/download V=s
+make package/nbtverify/compile -j"$(nproc)" V=s
+make package/feeds/luci/luci-base/host/compile -j"$(nproc)" V=s
+make package/luci-app-nbtverify/compile -j"$(nproc)" V=s
 ```
 
-## Method 2: Use with OpenWrt SDK
+## SDK 构建
 
-### Step 1: Download SDK
+必须使用与目标固件相同发行版、目标和 libc ABI 的 SDK。不要根据 CPU 名称混用 OpenWrt 与 ImmortalWrt SDK，也不要把 APK 与 IPK 混装。
 
-Download the OpenWrt SDK for your target from:
-https://downloads.openwrt.org/
+当前 CI/验收目标是 ImmortalWrt 25.12.1 x86/64：
 
-Example for x86_64:
-```bash
-wget https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-sdk-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.xz
-tar xf openwrt-sdk-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.xz
-cd openwrt-sdk-x86-64_gcc-13.3.0_musl.Linux-x86_64
+```text
+https://downloads.immortalwrt.org/releases/25.12.1/targets/x86/64/
 ```
 
-### Step 2: Update Feeds
+具体下载、SHA-256 校验和构建命令见 [README.md](README.md#使用匹配-sdk-构建)。
 
-```bash
-./scripts/feeds update -a
-./scripts/feeds install -a
-./scripts/feeds install golang
+## 输出格式
+
+- ImmortalWrt 25.12.1 使用 APK，文件名形如 `nbtverify-0.1.9-r1.apk`。
+- 较旧的 24.10 构建树通常使用 IPK，文件名形如 `nbtverify_0.1.9-r1_x86_64.ipk`。
+
+查找输出时以实际 SDK 为准：
+
+```sh
+find bin/packages -type f \( -name '*nbtverify*.apk' -o -name '*nbtverify*.ipk' \)
 ```
 
-### Step 3: Copy Packages
+## 运行时依赖
 
-```bash
-git clone https://github.com/nbtca/luci-app-nbtverify.git
-cp -r luci-app-nbtverify/nbtverify package/
-cp -r luci-app-nbtverify/luci-app-nbtverify package/
+`nbtverify`：
+
+- `ca-bundle`
+- `jshn`
+- 由 `golang-package.mk` 生成的架构约束
+
+`luci-app-nbtverify`：
+
+- `nbtverify`
+- `luci-compat`（旧式 Lua controller/CBI 的兼容运行时）
+
+## 常见问题
+
+### 包能构建但无法安装
+
+先在目标设备检查：
+
+```sh
+cat /etc/openwrt_release
+command -v apk || command -v opkg
+apk --print-arch 2>/dev/null || opkg print-architecture
 ```
 
-### Step 4: Build
+发行版、版本、包格式和架构都应与 SDK 输出一致。纯用户态包不依赖 kernel vermagic，但仍不能忽略 libc 和包管理器差异。
 
-```bash
-make package/nbtverify/compile V=s
-make package/luci-app-nbtverify/compile V=s
+### LuCI 菜单未出现
+
+确认 `luci-app-nbtverify` 和 `luci-compat` 已安装，然后执行：
+
+```sh
+rm -f /tmp/luci-indexcache.*
+rm -rf /tmp/luci-modulecache/
+/etc/init.d/rpcd reload
 ```
 
-### Step 5: Find Packages
-
-Compiled packages will be in:
-```
-bin/packages/*/base/nbtverify_*.ipk
-bin/packages/*/luci/luci-app-nbtverify_*.ipk
-```
-
-## Method 3: Use Pre-built Packages
-
-Download pre-built packages from the [Releases](https://github.com/nbtca/luci-app-nbtverify/releases) page.
-
-## Supported Architectures
-
-- x86_64 (Intel/AMD 64-bit)
-- arm_cortex-a9 (BCM53xx, IPQ40xx, etc.)
-- arm_cortex-a7_neon-vfpv4
-- aarch64_cortex-a53 (ARM64)
-- mipsel_24kc (Ramips MT7621, etc.)
-- And more...
-
-## Dependencies
-
-### For nbtverify package:
-- golang (build-time only)
-- ipset
-- dnsmasq-full
-- curl
-
-### For luci-app-nbtverify:
-- nbtverify
-- luci-base
-
-## Troubleshooting
-
-### Go Build Fails
-
-Make sure golang feed is properly installed:
-```bash
-./scripts/feeds update packages
-./scripts/feeds install golang
-```
-
-### Missing Dependencies
-
-Install required feeds:
-```bash
-./scripts/feeds update -a
-./scripts/feeds install -a
-```
-
-### Package Not Found in menuconfig
-
-Make sure the feed is properly updated and packages are installed:
-```bash
-./scripts/feeds update nbtverify
-./scripts/feeds install -a -p nbtverify
-```
-
-## Contributing
-
-For build system improvements or bug reports, please open an issue or pull request at:
-https://github.com/nbtca/luci-app-nbtverify
+正常安装时，`luci.mk` 生成的 post-install 脚本会自动完成这些操作。

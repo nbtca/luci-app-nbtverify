@@ -1,0 +1,173 @@
+<script type="text/javascript">
+//<![CDATA[
+(function() {
+	'use strict';
+
+	function translate(key) {
+		var node = document.querySelector('#nbtverify-i18n [data-key="' + key + '"]');
+		return node ? node.textContent : key;
+	}
+
+	function clear(node) {
+		while (node.firstChild)
+			node.removeChild(node.firstChild);
+	}
+
+	function text(value) {
+		return value === null || value === undefined ? '' : String(value);
+	}
+
+	function appendMessage(parent, value, className) {
+		var line = document.createElement('div');
+		line.className = className || '';
+		line.textContent = text(value);
+		parent.appendChild(line);
+	}
+
+	function fallbackCopy(value) {
+		var input = document.createElement('textarea');
+		input.value = value;
+		input.setAttribute('readonly', 'readonly');
+		input.className = 'nbtverify-copy-source';
+		document.body.appendChild(input);
+		input.select();
+		input.setSelectionRange(0, input.value.length);
+
+		try {
+			document.execCommand('copy');
+			window.alert(translate('copied'));
+		} catch (error) {
+			window.alert(translate('copy-failed'));
+		}
+
+		document.body.removeChild(input);
+	}
+
+	function copyToClipboard(value) {
+		value = text(value);
+		if (navigator.clipboard && window.isSecureContext) {
+			navigator.clipboard.writeText(value).then(function() {
+				window.alert(translate('copied'));
+			}, function() {
+				fallbackCopy(value);
+			});
+		} else {
+			fallbackCopy(value);
+		}
+	}
+
+	function appendRow(grid, label, value) {
+		var labelNode = document.createElement('span');
+		labelNode.className = 'nbtverify-label';
+		labelNode.textContent = label + ':';
+		grid.appendChild(labelNode);
+
+		var valueNode = document.createElement('span');
+		valueNode.className = 'nbtverify-value';
+
+		var content = document.createElement('span');
+		content.textContent = text(value);
+		valueNode.appendChild(content);
+
+		var button = document.createElement('button');
+		button.type = 'button';
+		button.className = 'cbi-button cbi-button-neutral';
+		button.textContent = translate('copy');
+		button.addEventListener('click', function() {
+			copyToClipboard(value);
+		});
+		valueNode.appendChild(button);
+		grid.appendChild(valueNode);
+	}
+
+	function render(response) {
+		var container = document.getElementById('nbtverify-status');
+		if (!container)
+			return;
+
+		clear(container);
+		if (!response || !response.running) {
+			appendMessage(container, translate('stopped'), 'nbtverify-error');
+			return;
+		}
+
+		appendMessage(container, translate('running'), 'nbtverify-success');
+		if (!response.status) {
+			appendMessage(container, translate('waiting'), 'nbtverify-note');
+			return;
+		}
+
+		var result = response.status.result || {};
+		var detail = response.status.detail || {};
+		appendMessage(
+			container,
+			translate('success') + ': ' + (result.success ? translate('yes') : translate('no')),
+			result.success ? 'nbtverify-success' : 'nbtverify-error'
+		);
+
+		if (detail.welcome)
+			appendMessage(container, detail.welcome, 'nbtverify-welcome');
+		if (detail.account)
+			appendMessage(container, detail.account, 'nbtverify-account');
+		if (result.message)
+			appendMessage(container, result.message, 'nbtverify-note');
+
+		var grid = document.createElement('div');
+		grid.className = 'nbtverify-status-grid';
+		appendRow(grid, translate('campus-ip'), detail.userIp);
+		appendRow(grid, translate('mac'), detail.userMac);
+		appendRow(grid, translate('username'), detail.userName);
+		appendRow(grid, translate('gateway-router'), detail.deviceIp);
+		appendRow(grid, translate('login-url'), result.baseUrl);
+		container.appendChild(grid);
+	}
+
+	XHR.poll(3, '<%=url([[admin]], [[services]], [[nbtverify_status]])%>', null,
+		function(_request, response) {
+			render(response);
+		}
+	);
+}());
+//]]>
+</script>
+
+<style>
+.nbtverify-status-grid { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: .6rem 1rem; margin-top: 1rem; align-items: center; }
+.nbtverify-label { display: flex; align-items: center; }
+.nbtverify-value { min-width: 0; overflow-wrap: anywhere; font-weight: bold; }
+.nbtverify-value .cbi-button { margin-left: .5rem; }
+.nbtverify-success { color: green; font-weight: bold; }
+.nbtverify-error { color: red; font-weight: bold; }
+.nbtverify-note { margin-top: .5rem; }
+.nbtverify-welcome { color: blue; font-size: large; }
+.nbtverify-account { color: darkorange; font-size: large; }
+.nbtverify-copy-source { position: fixed; left: -10000px; top: -10000px; }
+@media (max-width: 480px) {
+	.nbtverify-status-grid { grid-template-columns: 1fr; }
+	.nbtverify-value { margin-bottom: .4rem; }
+}
+</style>
+
+<div id="nbtverify-i18n" style="display:none">
+	<span data-key="running"><%:The nbtverify service is running.%></span>
+	<span data-key="stopped"><%:The nbtverify service is not running.%></span>
+	<span data-key="waiting"><%:Waiting for authentication status...%></span>
+	<span data-key="success"><%:Success%></span>
+	<span data-key="yes"><%:Yes%></span>
+	<span data-key="no"><%:No%></span>
+	<span data-key="campus-ip"><%:Campus IP%></span>
+	<span data-key="mac"><%:MAC%></span>
+	<span data-key="username"><%:Username%></span>
+	<span data-key="gateway-router"><%:Gateway Router%></span>
+	<span data-key="login-url"><%:Login URL%></span>
+	<span data-key="copy"><%:Copy%></span>
+	<span data-key="copied"><%:Copied to clipboard.%></span>
+	<span data-key="copy-failed"><%:Copy failed.%></span>
+</div>
+
+<fieldset class="cbi-section">
+	<legend><%:nbtverify status%></legend>
+	<div id="nbtverify-status">
+		<em><%:Collecting data...%></em>
+	</div>
+</fieldset>

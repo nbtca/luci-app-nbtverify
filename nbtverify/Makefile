@@ -4,23 +4,19 @@ PKG_NAME:=nbtverify
 PKG_VERSION:=0.1.9
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/nbtca/nbtverify.git
-PKG_SOURCE_VERSION:=v$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_MIRROR_HASH:=skip
+PKG_SOURCE_URL:=https://codeload.github.com/nbtca/nbtverify/tar.gz/refs/tags/v$(PKG_VERSION)?
+PKG_HASH:=96d39232da123a1fcee527e0f697e5fb83f305fba39dd4ba6b39e332bdbaac41
 
-PKG_LICENSE:=GPL-2.0
+PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=nbtca <https://github.com/nbtca>
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
-PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 
 GO_PKG:=github.com/nbtca/nbtverify
-GO_PKG_BUILD_PKG:=$(GO_PKG)
-GO_PKG_LDFLAGS_X:=main.version=$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
@@ -30,7 +26,7 @@ define Package/nbtverify
 	CATEGORY:=Network
 	TITLE:=Campus network authentication client
 	URL:=https://github.com/nbtca/nbtverify
-	DEPENDS:=$(GO_ARCH_DEPENDS) +ipset +dnsmasq-full +curl
+	DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +jshn
 endef
 
 define Package/nbtverify/description
