@@ -1,0 +1,12 @@
+* text=auto
+
+*.lua text eol=lf
+*.htm text eol=lf
+*.po text eol=lf
+*.patch text eol=lf whitespace=-space-before-tab,-blank-at-eol
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+Makefile text eol=lf
+nbtverify/files/etc/config/* text eol=lf
+nbtverify/files/etc/init.d/* text eol=lf

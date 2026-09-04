@@ -2,3 +2,33 @@
 tools/connection.json
 /downloads
 /dist
+
+# OpenWrt SDK build artifacts
+openwrt-sdk/
+openwrt-sdk-*/
+*.tar.xz
+bin/
+build_dir/
+staging_dir/
+tmp/
+logs/
+
+# Build outputs
+*.ipk
+*.deb
+*.rpm
+
+# Editor and IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp
